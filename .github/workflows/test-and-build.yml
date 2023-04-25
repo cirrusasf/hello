@@ -1,0 +1,88 @@
+name: Test and build
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+env:
+  HELLO_REGISTRY: 050846374571.dkr.ecr.us-west-2.amazonaws.com
+  AWS_REGION: us-west-2
+  AWS_ACCESS_KEY_ID: ${{ secrets.V2_AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.V2_AWS_SECRET_ACCESS_KEY }}
+
+jobs:
+  call-pytest-workflow:
+    uses: ASFHyP3/actions/.github/workflows/reusable-pytest.yml@v0.7.0
+    with:
+      local_package_name: hello
+      python_versions: >-
+        ["3.10"]
+
+  call-version-info-workflow:
+    uses: ASFHyP3/actions/.github/workflows/reusable-version-info.yml@v0.7.0
+    with:
+      python_version: '3.10'
+
+  dockerize:
+    needs: call-version-info-workflow
+    runs-on: ubuntu-latest
+    env:
+      SDIST_VERSION: ${{ needs.call-version-info-workflow.outputs.version_tag }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: set environment variables
+        run: |
+          git fetch origin +refs/tags/*:refs/tags/*
+          echo "CI_JOB_TIMESTAMP=$(date --utc --rfc-3339=seconds)" >> $GITHUB_ENV
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ env.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          no-cache: true
+          push: true
+          tags: |
+            ${{ env.HELLO_REGISTRY }}/${{ github.event.repository.name }}:${{ env.SDIST_VERSION }}
+          labels: |
+            org.opencontainers.image.created=${{ env.CI_JOB_TIMESTAMP }}
+            org.opencontainers.image.version=${{ env.SDIST_VERSION }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Add test tag
+        if: github.ref == 'refs/heads/develop'
+        uses: akhilerm/tag-push-action@v2.1.0
+        with:
+          src: ${{ env.HELLO_REGISTRY }}/${{ github.event.repository.name }}:${{ env.SDIST_VERSION }}
+          dst: ${{ env.HELLO_REGISTRY }}/${{ github.event.repository.name }}:test
+
+      - name: Add latest tag
+        if: github.ref == 'refs/heads/main'
+        uses: akhilerm/tag-push-action@v2.1.0
+        with:
+          src: ${{ env.HELLO_REGISTRY }}/${{ github.event.repository.name }}:${{ env.SDIST_VERSION }}
+          dst: ${{ env.HELLO_REGISTRY }}/${{ github.event.repository.name }}:latest
+
+      - name: Logout of Amazon ECR
+        if: always()
+        run: docker logout ${HELLO_REGISTRY}
