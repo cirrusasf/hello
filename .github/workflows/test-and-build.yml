@@ -9,6 +9,10 @@ on:
     branches:
       - main
       - develop
+  workflow_dispatch:
+    branches:
+      - main
+      - develop
 
 env:
   HELLO_REGISTRY: 050846374571.dkr.ecr.us-west-2.amazonaws.com
