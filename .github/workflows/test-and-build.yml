@@ -37,8 +37,8 @@ jobs:
     needs: call-version-info-workflow
     runs-on: ubuntu-latest
     env:
-      #SDIST_VERSION: ${{ needs.call-version-info-workflow.outputs.version_tag }}
-      SDIST_VERSION: latest
+      SDIST_VERSION: ${{ needs.call-version-info-workflow.outputs.version_tag }}
+      #SDIST_VERSION: latest
     steps:
       - uses: actions/checkout@v3
         with:
