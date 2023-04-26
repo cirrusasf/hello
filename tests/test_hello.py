@@ -1,5 +1,4 @@
 import pytest
-
 from demo_hello import hello
 
 
@@ -11,5 +10,4 @@ def name():
 def test_sayhello(name):
 
     assert hello.SayHello(name) == "Jiang Zhu"
-
 
