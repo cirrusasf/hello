@@ -3,6 +3,7 @@ import argparse
 
 def SayHello(name):
     print("Hello ", name)
+    return name
 
 
 if __name__ == '__main__':
