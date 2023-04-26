@@ -1,1 +1,1 @@
-This project demo conda env, packageing the python project, docker container.
+This project demo conda env, packing the python project, docker container, and git action.
