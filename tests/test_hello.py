@@ -10,4 +10,3 @@ def name():
 def test_sayhello(name):
 
     assert hello.SayHello(name) == "Jiang Zhu"
-
