@@ -29,6 +29,6 @@ SHELL ["/bin/bash", "-l", "-c"]
 
 WORKDIR /home/conda/
 
-ENTRYPOINT ["python3","/demo_hello/demo_hello/hello.py"]
+ENTRYPOINT ["python3","/demo_hello/hello/hello.py"]
 
 CMD ["-h"]
